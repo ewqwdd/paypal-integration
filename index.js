@@ -25,7 +25,7 @@ async function generateAccessToken() {
 }
 
 // Создание заказа и возврат checkout-ссылки
-app.post("/create-order", async (req, res) => {
+app.get("/create-order", async (req, res) => {
     try {
         const accessToken = await generateAccessToken();
         const response = await axios.post(`${PAYPAL_API}/v2/checkout/orders`, {
