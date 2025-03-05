@@ -34,8 +34,8 @@ app.post("/create-order", async (req, res) => {
                 amount: { currency_code: "USD", value: "00.01" }
             }],
             application_context: {
-                return_url: "http://localhost:3000/success",
-                cancel_url: "http://localhost:3000/cancel"
+                return_url: process.env.SERVER_URL + "/success",
+                cancel_url: process.env.SERVER_URL + "/cancel"
             }
         }, {
             headers: { "Authorization": `Bearer ${accessToken}` }
@@ -56,7 +56,7 @@ app.post("/capture-order", async (req, res) => {
         const response = await axios.post(`${PAYPAL_API}/v2/checkout/orders/${orderID}/capture`, {}, {
             headers: { "Authorization": `Bearer ${accessToken}` }
         });
-
+        console.log(req.body)
         res.json(response.data);
     } catch (error) {
         console.error("Ошибка при подтверждении платежа:", error.response?.data || error.message);
@@ -64,4 +64,4 @@ app.post("/capture-order", async (req, res) => {
     }
 });
 
-app.listen(4000, () => console.log("Сервер запущен на порту 4000"));
+app.listen(process.env.PORT || 3000, () => console.log("Сервер запущен на порту 4000"));
