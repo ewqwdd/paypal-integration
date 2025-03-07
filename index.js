@@ -2,7 +2,7 @@ require("dotenv").config();
 const express = require("express");
 const axios = require("axios");
 const cors = require("cors");
-import { v4 as uuidv4 } from 'uuid';
+const { v4: uuidv4 } = require("uuid");
 
 const app = express();
 app.use(express.json());
