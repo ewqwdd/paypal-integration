@@ -2,6 +2,7 @@ require("dotenv").config();
 const express = require("express");
 const axios = require("axios");
 const cors = require("cors");
+import { v4 as uuidv4 } from 'uuid';
 
 const app = express();
 app.use(express.json());
@@ -9,7 +10,7 @@ app.use(cors());
 
 const PAYPAL_CLIENT_ID = process.env.PAYPAL_CLIENT_ID;
 const PAYPAL_SECRET = process.env.PAYPAL_SECRET;
-const PAYPAL_API = "https://api-m.paypal.com"
+const PAYPAL_API = process.env.PAYPAL_API;
 
 // Генерация токена
 async function generateAccessToken() {
@@ -38,7 +39,7 @@ app.get("/create-order", async (req, res) => {
                 cancel_url: process.env.SERVER_URL + "/cancel"
             }
         }, {
-            headers: { "Authorization": `Bearer ${accessToken}` }
+            headers: { "Authorization": `Bearer ${accessToken}`, 'PayPal-Request-Id': uuidv4() }
         });
 
         res.json({ approvalUrl: response.data.links.find(link => link.rel === "approve").href });
@@ -64,4 +65,4 @@ app.post("/capture-order", async (req, res) => {
     }
 });
 
-app.listen(process.env.PORT || 3000, () => console.log("Сервер запущен на порту 4000"));
+app.listen(process.env.PORT || 4000, () => console.log("Сервер запущен на порту 4000"));
