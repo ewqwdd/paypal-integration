@@ -35,7 +35,7 @@ app.get("/create-order", async (req, res) => {
                 amount: { currency_code: "USD", value: "00.01" }
             }],
             application_context: {
-                return_url: process.env.SERVER_URL + "/success",
+                return_url: process.env.SERVER_URL + "/capture-order",
                 cancel_url: process.env.SERVER_URL + "/cancel",
                 shipping_preference: 'NO_SHIPPING',
                 user_action: 'PAY_NOW',
@@ -43,6 +43,7 @@ app.get("/create-order", async (req, res) => {
         }, {
             headers: { "Authorization": `Bearer ${accessToken}`}
         });
+        console.log(response.data);
 
         res.json({ approvalUrl: response.data.links.find(link => link.rel === "approve").href });
     } catch (error) {
@@ -59,6 +60,7 @@ app.get("/capture-order", async (req, res) => {
         const response = await axios.post(`${PAYPAL_API}/v2/checkout/orders/${orderID}/capture`, {}, {
             headers: { "Authorization": `Bearer ${accessToken}` }
         });
+        console.log(response.data);
         res.status(200).send('OK');
     } catch (error) {
         console.error("Ошибка при подтверждении платежа:", error.response?.data || error.message);
