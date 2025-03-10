@@ -36,10 +36,12 @@ app.get("/create-order", async (req, res) => {
             }],
             application_context: {
                 return_url: process.env.SERVER_URL + "/success",
-                cancel_url: process.env.SERVER_URL + "/cancel"
+                cancel_url: process.env.SERVER_URL + "/cancel",
+                shipping_preference: 'NO_SHIPPING',
+                user_action: 'PAY_NOW',
             }
         }, {
-            headers: { "Authorization": `Bearer ${accessToken}`, 'PayPal-Request-Id': uuidv4() }
+            headers: { "Authorization": `Bearer ${accessToken}`}
         });
 
         res.json({ approvalUrl: response.data.links.find(link => link.rel === "approve").href });
@@ -50,15 +52,14 @@ app.get("/create-order", async (req, res) => {
 });
 
 // Подтверждение платежа
-app.post("/capture-order", async (req, res) => {
+app.get("/capture-order", async (req, res) => {
     try {
-        const { orderID } = req.body;
+        const orderID = req.query.token;
         const accessToken = await generateAccessToken();
         const response = await axios.post(`${PAYPAL_API}/v2/checkout/orders/${orderID}/capture`, {}, {
             headers: { "Authorization": `Bearer ${accessToken}` }
         });
-        console.log(req.body)
-        res.json(response.data);
+        res.status(200).send('OK');
     } catch (error) {
         console.error("Ошибка при подтверждении платежа:", error.response?.data || error.message);
         res.status(500).json({ error: "Ошибка при подтверждении платежа" });
