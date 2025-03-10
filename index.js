@@ -57,6 +57,7 @@ app.get("/capture-order", async (req, res) => {
     try {
         const orderID = req.query.token;
         const accessToken = await generateAccessToken();
+        console.log(accessToken)
         const response = await axios.post(`${PAYPAL_API}/v2/checkout/orders/${orderID}/capture`, {}, {
             headers: { "Authorization": `Bearer ${accessToken}` }
         });
