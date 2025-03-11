@@ -16,7 +16,7 @@ const PAYPAL_API = process.env.PAYPAL_API;
 async function generateAccessToken() {
     const response = await axios.post(
         `${PAYPAL_API}/v1/oauth2/token`,
-        "grant_type=client_credentials&scope=https://uri.paypal.com/payments/capture" +
+        "grant_type=client_credentials&ignoreCache=true&return_authn_schemes=true&return_client_metadata=true&return_unconsented_scopes=true" +
         {
             auth: {
                 username: PAYPAL_CLIENT_ID,
