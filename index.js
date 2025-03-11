@@ -10,7 +10,7 @@ app.use(express.json());
 app.use(cors());
 
 const PAYPAL_CLIENT_ID = process.env.PAYPAL_CLIENT_ID;
-const PAYPAL_SECRET = process.env.PAYPAL_SECRET;
+const PAYPAL_SECRET = process.env.PAYPAL_CLIENT_SECRET;
 const PAYPAL_API = process.env.PAYPAL_API;
 
 const data = qs.stringify({
@@ -25,7 +25,7 @@ const data = qs.stringify({
 async function generateAccessToken() {
     const response = await axios.post(
         `${PAYPAL_API}/v1/oauth2/token`,
-        "grant_type=client_credentials&ignoreCache=true&return_authn_schemes=true&return_client_metadata=true&return_unconsented_scopes=true" +
+        data,
         {
             auth: {
                 username: PAYPAL_CLIENT_ID,
