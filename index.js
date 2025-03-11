@@ -22,7 +22,7 @@ async function generateAccessToken() {
         },
         headers: { "Content-Type": "application/x-www-form-urlencoded" }
     });
-    console.log(response.data.access_token)
+    console.log(response.data)
     return response.data.access_token;
 }
 
