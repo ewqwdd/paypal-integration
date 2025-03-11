@@ -2,7 +2,8 @@ require("dotenv").config();
 const express = require("express");
 const axios = require("axios");
 const cors = require("cors");
-const { v4: uuidv4 } = require("uuid");
+const qs = require('qs');
+
 
 const app = express();
 app.use(express.json());
@@ -11,6 +12,14 @@ app.use(cors());
 const PAYPAL_CLIENT_ID = process.env.PAYPAL_CLIENT_ID;
 const PAYPAL_SECRET = process.env.PAYPAL_SECRET;
 const PAYPAL_API = process.env.PAYPAL_API;
+
+const data = qs.stringify({
+    grant_type: 'client_credentials',
+    ignoreCache: 'true',
+    return_authn_schemes: 'true',
+    return_client_metadata: 'true',
+    return_unconsented_scopes: 'true'
+  });
 
 // Генерация токена
 async function generateAccessToken() {
