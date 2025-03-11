@@ -16,42 +16,7 @@ const PAYPAL_API = process.env.PAYPAL_API;
 async function generateAccessToken() {
     const response = await axios.post(
         `${PAYPAL_API}/v1/oauth2/token`,
-        "grant_type=client_credentials&scope=" +
-        encodeURIComponent(
-            "openid " +
-            "address " +
-            "email " +
-            "phone " +
-            "profile " +
-            "https://uri.paypal.com/payments/payouts " +
-            "https://uri.paypal.com/services/applications/webhooks " +
-            "https://uri.paypal.com/services/disputes/read-buyer " +
-            "https://uri.paypal.com/services/disputes/read-seller " +
-            "https://uri.paypal.com/services/disputes/update-seller " +
-            "https://uri.paypal.com/services/expresscheckout " +
-            "https://uri.paypal.com/services/identity/activities " +
-            "https://uri.paypal.com/services/identity/grantdelegation " +
-            "https://uri.paypal.com/services/identity/proxyclient " +
-            "https://uri.paypal.com/services/invoicing " +
-            "https://uri.paypal.com/services/payments/payment/authcapture " +
-            "https://uri.paypal.com/services/payments/realtimepayment " +
-            "https://uri.paypal.com/services/payments/refund " +
-            "https://uri.paypal.com/services/paypalattributes/business " +
-            "https://uri.paypal.com/services/paypalhere " +
-            "https://uri.paypal.com/services/subscriptions " +
-            "https://uri.paypal.com/services/reporting/search/read " +
-            "https://api-m.paypal.com/v1/payments/.* " +
-            "https://api-m.paypal.com/v1/vault/credit-card " +
-            "https://api-m.paypal.com/v1/vault/credit-card/.* " +
-            "https://api.paypal.com/v1/payments/.* " +
-            "https://api.paypal.com/v1/payments/refund " +
-            "https://api.paypal.com/v1/payments/sale/.*/refund " +
-            "https://api.paypal.com/v1/vault/credit-card " +
-            "https://api.paypal.com/v1/vault/credit-card/.* " +
-            "https://uri.paypal.com/payments/capture " +  // 💥 Добавляем capture
-            "https://uri.paypal.com/payments/authorize " + // 💥 Добавляем authorize
-            "https://uri.paypal.com/payments/orders " // 💥 Добавляем orders
-        ),
+        "grant_type=client_credentials&scope=https://uri.paypal.com/payments/capture" +
         {
             auth: {
                 username: PAYPAL_CLIENT_ID,
