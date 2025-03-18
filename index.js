@@ -16,14 +16,14 @@ const PAYPAL_SECRET = process.env.PAYPAL_CLIENT_SECRET;
 const PAYPAL_API = process.env.PAYPAL_API;
 
 const products = {
-    'PROD-82W61782RK695901P': {
+    [process.env.PRDOUCT_ID]: {
         price: 0.01,
         name: 'Test plan'
     }
 }
 
 const plans = {
-    'P-7FE23761FP450251PM7MKXWY': {
+    [process.env.PLAN_ID]: {
         productId: 'PROD-82W61782RK695901P',
         name: 'Test plan',
         description: 'test subscription product',
