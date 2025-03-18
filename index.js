@@ -174,7 +174,7 @@ app.post("/create-subscription", async (req, res) => {
                 email_address: email
             },
             application_context: {
-                return_url: process.env.SERVER_URL + "/subscription-success/" +(id ?? user.data.id),
+                return_url: process.env.SERVER_URL + "/subscription-success/" + (id ?? user.data.id),
                 cancel_url: process.env.SERVER_URL + "/subscription-cancel"
             }
         }, {
@@ -192,6 +192,7 @@ app.get("/subscription-success/:id", async (req, res) => {
     try {
         const subscriptionId = req.query.subscription_id;
         const {id} = req.params;
+        console.log(id)
         const accessToken = await generateAccessToken();
 
         const response = await axios.get(`${PAYPAL_API}/v1/billing/subscriptions/${subscriptionId}`, {
