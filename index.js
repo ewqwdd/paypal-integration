@@ -155,7 +155,7 @@ app.post("/create-plan", async (req, res) => {
 
 app.post("/create-subscription", async (req, res) => {
     try {
-        const {planId, name, surname, email} = req.body;
+        const {planId, name, surname, email, id} = req.body;
 
         const user = await memberstack.members.retrieve({
             email: email
@@ -174,7 +174,7 @@ app.post("/create-subscription", async (req, res) => {
                 email_address: email
             },
             application_context: {
-                return_url: process.env.SERVER_URL + "/subscription-success/" + user.data.id,
+                return_url: process.env.SERVER_URL + "/subscription-success/" +(id ?? user.data.id),
                 cancel_url: process.env.SERVER_URL + "/subscription-cancel"
             }
         }, {
