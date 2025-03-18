@@ -186,7 +186,7 @@ app.post("/create-subscription", async (req, res) => {
         res.json({ url: response.data.links.find(link => link.rel === "approve").href });
     } catch (error) {
         console.error("Ошибка при создании подписки:", error.response?.data || error.message);
-        res.status(500).json({ error: "Ошибка при создании подписки" });
+        res.status(500).json({ error: error.response?.data || error.message || "Ошибка при создании подписки" });
     }
 });
 
@@ -216,7 +216,7 @@ app.get("/subscription-success/:id", async (req, res) => {
         res.status(200).redirect('https://rfu-news.webflow.io/paypal-test');
     } catch (error) {
         console.error("Ошибка подтверждения подписки:", error.response?.data || error.message);
-        res.status(500).json({ error: "Ошибка подтверждения подписки" });
+        res.status(500).json({ error: error.response?.data || error.message || "Ошибка подтверждения подписки" });
     }
 });
 
