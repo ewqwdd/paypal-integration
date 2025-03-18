@@ -3,15 +3,33 @@ const express = require("express");
 const axios = require("axios");
 const cors = require("cors");
 const qs = require('qs');
-
+const memberstackAdmin = require('@memberstack/admin');
 
 const app = express();
 app.use(express.json());
 app.use(cors());
 
+const memberstack = memberstackAdmin.init(process.env.SECRET_KEY);
+
 const PAYPAL_CLIENT_ID = process.env.PAYPAL_CLIENT_ID;
 const PAYPAL_SECRET = process.env.PAYPAL_CLIENT_SECRET;
 const PAYPAL_API = process.env.PAYPAL_API;
+
+const products = {
+    'PROD-82W61782RK695901P': {
+        price: 0.01,
+        name: 'Test plan'
+    }
+}
+
+const plans = {
+    'P-7FE23761FP450251PM7MKXWY': {
+        productId: 'PROD-82W61782RK695901P',
+        name: 'Test plan',
+        description: 'test subscription product',
+        status: 'ACTIVE',
+    }
+}
 
 const data = qs.stringify({
     grant_type: 'client_credentials',
@@ -34,7 +52,6 @@ async function generateAccessToken() {
             headers: { "Content-Type": "application/x-www-form-urlencoded" }
         }
     );
-    console.log(response.data)
     return response.data.access_token;
 }
 
@@ -82,5 +99,134 @@ app.get("/capture-order", async (req, res) => {
         res.status(500).json({ error: "Ошибка при подтверждении платежа" });
     }
 });
+
+app.post("/create-product", async (req, res) => {
+    try {
+        const accessToken = await generateAccessToken();
+        const response = await axios.post(`${PAYPAL_API}/v1/catalogs/products`, {
+            name: "test subscription product",
+            description: "test subscription product",
+            type: "SERVICE", // "SERVICE" для цифровых товаров, "PHYSICAL" для физических товаров
+            category: "SOFTWARE", // Категория товара, можно выбрать из списка PayPal
+        }, {
+            headers: { "Authorization": `Bearer ${accessToken}` }
+        });
+
+        res.json({ productId: response.data.id });
+    } catch (error) {
+        console.error("Ошибка при создании продукта:", error.response?.data || error.message);
+        res.status(500).json({ error: "Ошибка при создании продукта" });
+    }
+});
+
+app.post("/create-plan", async (req, res) => {
+    try {
+        const accessToken = await generateAccessToken();
+        const key = Object.keys(products)[0]
+        const response = await axios.post(`${PAYPAL_API}/v1/billing/plans`, {
+            product_id: key, // Создай продукт заранее в PayPal
+            name: "Test Subscription",
+            description: "test subscription product",
+            status: "ACTIVE",
+            billing_cycles: [
+                {
+                    frequency: { interval_unit: "MONTH", interval_count: 1 },
+                    tenure_type: "REGULAR",
+                    sequence: 1,
+                    total_cycles: 12,
+                    pricing_scheme: { fixed_price: { value: String(products[key].price), currency_code: "USD" } }
+                }
+            ],
+            payment_preferences: {
+                auto_bill_outstanding: true,
+                setup_fee_failure_action: "CONTINUE",
+                payment_failure_threshold: 3
+            }
+        }, {
+            headers: { "Authorization": `Bearer ${accessToken}` }
+        });
+
+        res.json({ planId: response.data.id });
+    } catch (error) {
+        console.error("Ошибка при создании плана:", error.response?.data || error.message);
+        res.status(500).json({ error: "Ошибка при создании плана" });
+    }
+});
+
+app.post("/create-subscription", async (req, res) => {
+    try {
+        const {planId, name, surname, email} = req.body;
+
+        const user = await memberstack.members.retrieve({
+            email: email
+        })
+        console.log(user)
+
+        if (!user) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        const accessToken = await generateAccessToken();
+        const response = await axios.post(`${PAYPAL_API}/v1/billing/subscriptions`, {
+            plan_id: planId, // Полученный planId из предыдущего запроса
+            subscriber: {
+                name: { given_name: name, surname },
+                email_address: email
+            },
+            application_context: {
+                return_url: process.env.SERVER_URL + "/subscription-success/" + user.data.id,
+                cancel_url: process.env.SERVER_URL + "/subscription-cancel"
+            }
+        }, {
+            headers: { "Authorization": `Bearer ${accessToken}` }
+        });
+
+        res.json({ url: response.data.links.find(link => link.rel === "approve").href });
+    } catch (error) {
+        console.error("Ошибка при создании подписки:", error.response?.data || error.message);
+        res.status(500).json({ error: "Ошибка при создании подписки" });
+    }
+});
+
+app.get("/subscription-success/:id", async (req, res) => {
+    try {
+        const subscriptionId = req.query.subscription_id;
+        const {id} = req.params;
+        const accessToken = await generateAccessToken();
+
+        const response = await axios.get(`${PAYPAL_API}/v1/billing/subscriptions/${subscriptionId}`, {
+            headers: { "Authorization": `Bearer ${accessToken}` }
+        });
+
+        const subscriptionData = response.data;
+        const email = subscriptionData.subscriber.email_address;
+
+        const member = await memberstack.members.addFreePlan({
+            id,
+            data: {
+                planId: 'pln_test-paypal-r84s0jhl',
+            }
+        })
+
+        console.log("Подписка активирована:", member);
+        res.status(200).redirect('https://rfu-news.webflow.io/paypal-test');
+    } catch (error) {
+        console.error("Ошибка подтверждения подписки:", error.response?.data || error.message);
+        res.status(500).json({ error: "Ошибка подтверждения подписки" });
+    }
+});
+
+app.post("/webhook", async (req, res) => {
+    const event = req.body;
+
+    if (event.event_type === "BILLING.SUBSCRIPTION.CANCELLED") {
+        console.log("Подписка отменена:", event.resource.id);
+    } else if (event.event_type === "PAYMENT.SALE.COMPLETED") {
+        console.log("Оплата подписки прошла успешно:", event.resource.id);
+    }
+
+    res.sendStatus(200);
+});
+
 
 app.listen(process.env.PORT || 4000, () => console.log("Сервер запущен на порту 4000"));
