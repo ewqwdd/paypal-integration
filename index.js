@@ -157,10 +157,12 @@ app.post("/create-subscription", async (req, res) => {
     try {
         const {planId, name, surname, email, id} = req.body;
 
-        const user = await memberstack.members.retrieve({
-            email: email
+        const {data} = await axios.get('https://admin.memberstack.com/members/' + email, {
+            headers: {
+                'x-api-key': process.env.SECRET_KEY
+            }
         })
-        console.log(user)
+        const user = data.data
 
         if (!user) {
             return res.status(404).json({ error: "User not found" });
@@ -174,7 +176,7 @@ app.post("/create-subscription", async (req, res) => {
                 email_address: email
             },
             application_context: {
-                return_url: process.env.SERVER_URL + "/subscription-success/" + (id ?? user.data.id),
+                return_url: process.env.SERVER_URL + "/subscription-success/" + user.id,
                 cancel_url: process.env.SERVER_URL + "/subscription-cancel"
             }
         }, {
