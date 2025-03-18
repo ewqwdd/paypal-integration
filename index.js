@@ -203,8 +203,8 @@ app.get("/subscription-success/:id", async (req, res) => {
         const email = subscriptionData.subscriber.email_address;
 
         const member = await memberstack.members.addFreePlan({
-            id,
             data: {
+                id,
                 planId: 'pln_test-paypal-r84s0jhl',
             }
         })
