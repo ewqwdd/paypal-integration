@@ -24,9 +24,9 @@ const products = {
 }
 
 const plans = {
-    "P-4WC106554A246992NM7OBV2Q": "pln_insider-monthly-m5y0at0",
-    "P-8N586697TN3124256M7OBYIA": "pln_all-access-zwg0fdg",
-    "P-3ML1600338338254EM7OBYYA": "pln_insider-annual-tes0f4e"
+    "P-4WC106554A246992NM7OBV2Q": "pln_insider-monthly-paypal-gw2100nw",
+    "P-8N586697TN3124256M7OBYIA": "pln_all-access-paypal-pl1907y9",
+    "P-3ML1600338338254EM7OBYYA": "pln_insider-annual-paypal-mb2000l2"
 }
 
 const data = qs.stringify({
