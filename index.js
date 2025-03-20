@@ -24,7 +24,8 @@ const products = {
 }
 
 const plans = {
-    
+    "P-4WC106554A246992NM7OBV2Q": "pln_insider-monthly-m5y0at0",
+
 }
 
 const data = qs.stringify({
@@ -153,7 +154,8 @@ app.post("/create-plan", async (req, res) => {
 //     plan: {
 //         name: string,
 //         description: string,
-//         price: number
+//         price: number,
+//         interval: "MONTH" | "DAY" | "WEEK" | "YEAR"
 //     },
 //     product: {
 //         name: string,
@@ -188,7 +190,7 @@ app.post("/add-plan", async (req, res) => {
             status: "ACTIVE",
             billing_cycles: [
                 {
-                    frequency: { interval_unit: "MONTH", interval_count: 1 },
+                    frequency: { interval_unit: plan.interval ?? "MONTH", interval_count: 1 },
                     tenure_type: "REGULAR",
                     sequence: 1,
                     total_cycles: 12,
