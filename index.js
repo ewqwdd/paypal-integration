@@ -25,7 +25,8 @@ const products = {
 
 const plans = {
     "P-4WC106554A246992NM7OBV2Q": "pln_insider-monthly-m5y0at0",
-
+    "P-8N586697TN3124256M7OBYIA": "pln_all-access-zwg0fdg",
+    "P-3ML1600338338254EM7OBYYA": "pln_insider-annual-tes0f4e"
 }
 
 const data = qs.stringify({
@@ -264,13 +265,14 @@ app.get("/subscription-success/:id", async (req, res) => {
         });
 
         const subscriptionData = response.data;
+        console.log(subscriptionData);
         const email = subscriptionData.subscriber.email_address;
 
         const member = await memberstack.members.addFreePlan({
             id,
             data: {
                 id,
-                planId: 'pln_test-paypal-r84s0jhl',
+                planId: plans[subscriptionData.plan_id],
             }
         })
 
