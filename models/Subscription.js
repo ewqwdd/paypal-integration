@@ -9,6 +9,10 @@ const subscriptionSchema = new Schema({
     type: String,
     required: true,
   },
+  subscriptionId: {
+    type: String,
+    required: true,
+  },
   memberstackPlanId: {
     type: String,
     required: true,

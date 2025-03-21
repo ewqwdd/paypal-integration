@@ -379,6 +379,7 @@ app.get("/subscription-success/:id", async (req, res) => {
       email,
       planId: subscriptionData.plan_id,
       memberstackPlanId: plan.memberstackPlanId,
+      subscriptionId: subscriptionData.id,
     });
     await subscription.save();
 
@@ -412,6 +413,7 @@ app.post("/webhook", async (req, res) => {
 
   if (event.event_type === "BILLING.SUBSCRIPTION.CANCELLED") {
     console.log("Подписка отменена:", event.resource.id);
+
   } else if (event.event_type === "PAYMENT.SALE.COMPLETED") {
     console.log("Оплата подписки прошла успешно:", event.resource.id);
   }
