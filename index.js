@@ -293,6 +293,15 @@ app.post("/create-subscription", async (req, res) => {
       return res.status(404).json({ error: "Plan not found" });
     }
 
+    const foundSubscription = await Subscription.findOne({
+      memberEmail: email,
+      planId,
+    });
+
+    if (foundSubscription) {
+      return res.status(400).json({ error: "Subscription already exists" });
+    }
+
     const { data } = await axios.get(
       "https://admin.memberstack.com/members/" + email,
       {
@@ -335,14 +344,10 @@ app.post("/create-subscription", async (req, res) => {
       "Ошибка при создании подписки:",
       error.response?.data || error.message
     );
-    res
-      .status(500)
-      .json({
-        error:
-          error.response?.data ||
-          error.message ||
-          "Ошибка при создании подписки",
-      });
+    res.status(500).json({
+      error:
+        error.response?.data || error.message || "Ошибка при создании подписки",
+    });
   }
 });
 
@@ -376,8 +381,8 @@ app.get("/subscription-success/:id", async (req, res) => {
     });
 
     const member = await memberstack.members.retrieve({
-        id,
-    })
+      id,
+    });
 
     const subscription = new Subscription({
       email,
@@ -396,14 +401,80 @@ app.get("/subscription-success/:id", async (req, res) => {
       "Ошибка подтверждения подписки:",
       error.response?.data || error.message
     );
-    res
-      .status(500)
-      .json({
-        error:
-          error.response?.data ||
-          error.message ||
-          "Ошибка подтверждения подписки",
+    res.status(500).json({
+      error:
+        error.response?.data ||
+        error.message ||
+        "Ошибка подтверждения подписки",
+    });
+  }
+});
+
+app.post("/unsubscribe", async (req, res) => {
+  const { email, subscriptionId } = req.body;
+
+  try {
+    let subscription;
+
+    if (subscriptionId) {
+      subscription = await Subscription.findOne({ subscriptionId });
+    } else if (email) {
+      subscription = await Subscription.findOne({ email });
+    }
+
+    if (!subscription) {
+      return res.status(404).json({ error: "Subscrription not found" });
+    }
+
+    try {
+      await memberstack.members.removeFreePlan({
+        id: subscription.memberId,
+        data: {
+          planId: subscription.memberstackPlanId,
+        },
       });
+    } catch (error) {
+      console.error("Ошибка при отмене через memberId:", error);
+
+      try {
+        const member = await memberstack.members.retrieve({
+          email: subscription.memberEmail,
+        });
+
+        if (member?.data?.id) {
+          await memberstack.members.removeFreePlan({
+            id: member.data.id,
+            data: { planId: subscription.memberstackPlanId },
+          });
+        } else {
+          return res
+            .status(404)
+            .json({ error: "Пользователь не найден по email" });
+        }
+      } catch (emailError) {
+        console.error("Ошибка при поиске по email:", emailError);
+        return res.status(500).json({ error: "Ошибка при отмене подписки" });
+      }
+    }
+
+    const accessToken = await generateAccessToken();
+
+    await axios.post(
+      `${PAYPAL_API}/v1/billing/subscriptions/${subscription.subscriptionId}/cancel`,
+      {
+        reason: "User-initiated cancellation",
+      },
+      {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      }
+    );
+
+    await Subscription.deleteOne({ _id: subscription._id });
+
+    res.json({ success: true, message: "Subscription is cancelled" });
+  } catch (err) {
+    console.error("Ошибка при отмене подписки:", err);
+    res.status(500).json({ error: "Внутренняя ошибка сервера" });
   }
 });
 
@@ -420,30 +491,29 @@ app.post("/webhook", async (req, res) => {
   if (event.event_type === "BILLING.SUBSCRIPTION.CANCELLED") {
     console.log("Подписка отменена:", event.resource.id);
     const subscription = await Subscription.findOne({
-        subscriptionId: event.resource.id,
+      subscriptionId: event.resource.id,
     });
 
     try {
-        await memberstack.members.removeFreePlan({
-            id: subscription.memberId,
-            data: {
-                planId: subscription.memberstackPlanId,
-            }
-        })
+      await memberstack.members.removeFreePlan({
+        id: subscription.memberId,
+        data: {
+          planId: subscription.memberstackPlanId,
+        },
+      });
     } catch (error) {
-        const member = await memberstack.members.retrieve({
-            email: subscription.memberEmail,
-        });
-        memberEmail.members.removeFreePlan({
-            id: member.data.id,
-            data: {
-                planId: subscription.memberstackPlanId,
-            }
-        })
+      const member = await memberstack.members.retrieve({
+        email: subscription.memberEmail,
+      });
+      memberEmail.members.removeFreePlan({
+        id: member.data.id,
+        data: {
+          planId: subscription.memberstackPlanId,
+        },
+      });
     }
 
     await subscription.deleteOne({ _id: subscription._id });
-
   } else if (event.event_type === "PAYMENT.SALE.COMPLETED") {
     console.log("Оплата подписки прошла успешно:", event.resource.id);
   }
