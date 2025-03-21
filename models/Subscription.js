@@ -17,6 +17,14 @@ const subscriptionSchema = new Schema({
     type: String,
     required: true,
   },
+  memberId: {
+    type: String,
+    required: true,
+  },
+  memberEmail: {
+    type: String,
+    required: true,
+  },
 });
 
 module.exports = mongoose.model("Subscription", subscriptionSchema);

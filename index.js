@@ -367,7 +367,7 @@ app.get("/subscription-success/:id", async (req, res) => {
       planId: subscriptionData.plan_id,
     });
 
-    const member = await memberstack.members.addFreePlan({
+    await memberstack.members.addFreePlan({
       id,
       data: {
         id,
@@ -375,11 +375,17 @@ app.get("/subscription-success/:id", async (req, res) => {
       },
     });
 
+    const member = await memberstack.members.retrieve({
+        id,
+    })
+
     const subscription = new Subscription({
       email,
       planId: subscriptionData.plan_id,
       memberstackPlanId: plan.memberstackPlanId,
       subscriptionId: subscriptionData.id,
+      memberId: id,
+      memberEmail: member.data.auth.email,
     });
     await subscription.save();
 
@@ -413,6 +419,30 @@ app.post("/webhook", async (req, res) => {
 
   if (event.event_type === "BILLING.SUBSCRIPTION.CANCELLED") {
     console.log("Подписка отменена:", event.resource.id);
+    const subscription = await Subscription.findOne({
+        subscriptionId: event.resource.id,
+    });
+
+    try {
+        await memberstack.members.removeFreePlan({
+            id: subscription.memberId,
+            data: {
+                planId: subscription.memberstackPlanId,
+            }
+        })
+    } catch (error) {
+        const member = await memberstack.members.retrieve({
+            email: subscription.memberEmail,
+        });
+        memberEmail.members.removeFreePlan({
+            id: member.data.id,
+            data: {
+                planId: subscription.memberstackPlanId,
+            }
+        })
+    }
+
+    await subscription.deleteOne({ _id: subscription._id });
 
   } else if (event.event_type === "PAYMENT.SALE.COMPLETED") {
     console.log("Оплата подписки прошла успешно:", event.resource.id);
