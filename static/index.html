@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style>
+      .toast-aa81d3cfb.toast-error {
+        color: hsla(4, 100%, 69%, 1);
+        background: hsla(332, 23%, 11%, 1);
+        border-width: 2px;
+        border-style: solid;
+        border-color: hsla(4, 100%, 69%, 0.1);
+      }
+
+      .toast-aa81d3cfb.toast-success {
+        color: hsla(144, 84%, 44%, 1);
+        background: hsla(332, 23%, 11%, 1);
+        border-width: 2px;
+        border-style: solid;
+        border-color: hsla(144, 84%, 44%, 0.1);
+      }
+    </style>
+  </head>
+  <body class="flex flex-col min-h-screen bg-slate-300 max-w-7xl mx-auto">
+    <nav class="flex justify-between items-center">
+      <h1 class="text-lg font-medium">Admin</h1>
+      <input
+        id="password"
+        type="text"
+        placeholder="Password"
+        class="p-2 m-2 bg-slate-50 border border-slate-500 rounded-lg focus:shadow-md"
+      />
+    </nav>
+    <main class="flex flex-col flex-1 pt-10">
+      <form id="add-plan" class="flex items-center gap-4">
+        <input
+          required
+          name="name"
+          type="text"
+          placeholder="Name"
+          class="p-2 m-2 bg-slate-50 border border-slate-500 rounded-lg focus:shadow-md"
+        />
+        <input
+          required
+          name="description"
+          type="text"
+          placeholder="Description"
+          class="p-2 m-2 bg-slate-50 border border-slate-500 rounded-lg focus:shadow-md"
+        />
+        <input
+          required
+          name="price"
+          type="text"
+          placeholder="Price"
+          class="p-2 m-2 bg-slate-50 border border-slate-500 rounded-lg focus:shadow-md"
+        />
+        <input
+          required
+          name="memberstackPlanId"
+          type="text"
+          placeholder="Memberstack plan id"
+          class="p-2 m-2 bg-slate-50 border border-slate-500 rounded-lg focus:shadow-md"
+        />
+        <select
+          required
+          name="interval"
+          type="text"
+          placeholder="Password"
+          class="p-2 m-2 bg-slate-50 border border-slate-500 rounded-lg focus:shadow-md"
+        >
+          <option value="MONTH">MONTH</option>
+          <option value="YEAR">YEAR</option>
+        </select>
+        <button
+          type="submit"
+          class="p-2 px-6 transition-all hover:bg-slate-500 font-medium bg-slate-400 cursor-pointer border border-slate-500 rounded-lg focus:shadow-md"
+        >
+          Submit
+        </button>
+      </form>
+      <button
+        id="fetch-button"
+        class="self-end p-2 px-6 transition-all hover:bg-slate-500 font-medium bg-slate-400 cursor-pointer border border-slate-500 rounded-lg focus:shadow-md"
+      >
+        Fetch
+      </button>
+
+      <table class="min-w-full divide-y divide-gray-300 mt-10">
+        <thead class="bg-gray-50">
+          <tr>
+            <th
+              scope="col"
+              class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6"
+            >
+              Name
+            </th>
+            <th
+              scope="col"
+              class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+            >
+              Description
+            </th>
+            <th
+              scope="col"
+              class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+            >
+              Price
+            </th>
+            <th
+              scope="col"
+              class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+            >
+              Plan Id
+            </th>
+            <th
+              scope="col"
+              class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+            >
+              Memberstack Plan Id
+            </th>
+          </tr>
+        </thead>
+        <tbody
+          class="divide-y divide-gray-200 bg-white"
+          id="table-body"
+        ></tbody>
+      </table>
+    </main>
+    <script
+      src="https://cdn.jsdelivr.net/gh/ewqwdd/vanila-toast@main/main.min.js"
+      defer
+    ></script>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/ewqwdd/vanila-toast@main/style.min.css"
+    />
+    <script src="static/index.js"></script>
+  </body>
+</html>
