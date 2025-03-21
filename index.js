@@ -411,15 +411,15 @@ app.get("/subscription-success/:id", async (req, res) => {
 });
 
 app.post("/unsubscribe", async (req, res) => {
-  const { email, subscriptionId } = req.body;
+  const { memberId, subscriptionId } = req.body;
 
   try {
     let subscription;
 
     if (subscriptionId) {
       subscription = await Subscription.findOne({ subscriptionId });
-    } else if (email) {
-      subscription = await Subscription.findOne({ email });
+    } else if (memberId) {
+      subscription = await Subscription.findOne({ memberId });
     }
 
     if (!subscription) {
