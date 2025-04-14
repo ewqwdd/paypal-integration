@@ -34,45 +34,52 @@
       />
     </nav>
     <main class="flex flex-col flex-1 pt-10">
-      <form id="add-plan" class="flex items-center gap-4">
+      <form id="add-plan" class="flex items-center justify-between mb-4">
         <input
           required
           name="name"
           type="text"
           placeholder="Name"
-          class="p-2 m-2 bg-slate-50 border border-slate-500 rounded-lg focus:shadow-md"
+          class="p-2 bg-slate-50 border border-slate-500 rounded-lg focus:shadow-md"
         />
         <input
           required
           name="description"
           type="text"
           placeholder="Description"
-          class="p-2 m-2 bg-slate-50 border border-slate-500 rounded-lg focus:shadow-md"
+          class="p-2 bg-slate-50 border border-slate-500 rounded-lg focus:shadow-md"
         />
         <input
           required
           name="price"
           type="text"
           placeholder="Price"
-          class="p-2 m-2 bg-slate-50 border border-slate-500 rounded-lg focus:shadow-md"
+          class="p-2 bg-slate-50 border border-slate-500 rounded-lg focus:shadow-md"
         />
         <input
           required
           name="memberstackPlanId"
           type="text"
           placeholder="Memberstack plan id"
-          class="p-2 m-2 bg-slate-50 border border-slate-500 rounded-lg focus:shadow-md"
+          class="p-2 bg-slate-50 border border-slate-500 rounded-lg focus:shadow-md"
         />
         <select
           required
           name="interval"
           type="text"
           placeholder="Password"
-          class="p-2 m-2 bg-slate-50 border border-slate-500 rounded-lg focus:shadow-md"
+          class="p-2 bg-slate-50 border border-slate-500 rounded-lg focus:shadow-md"
         >
           <option value="MONTH">MONTH</option>
           <option value="YEAR">YEAR</option>
         </select>
+        <input
+          required
+          name="trialPrice"
+          type="text"
+          placeholder="Sale price (first month/year)"
+          class="p-2 bg-slate-50 border border-slate-500 rounded-lg focus:shadow-md"
+        />
         <button
           type="submit"
           class="p-2 px-6 transition-all hover:bg-slate-500 font-medium bg-slate-400 cursor-pointer border border-slate-500 rounded-lg focus:shadow-md"
@@ -107,6 +114,18 @@
               class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
             >
               Price
+            </th>
+            <th
+              scope="col"
+              class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+            >
+              Sale price
+            </th>
+            <th
+              scope="col"
+              class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+            >
+              Interval
             </th>
             <th
               scope="col"

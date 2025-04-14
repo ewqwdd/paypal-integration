@@ -30,6 +30,12 @@ window.addEventListener("load", () => {
       const price = document.createElement("td");
       price.textContent = plan.price;
       price.className = "whitespace-nowrap px-3 py-4 text-sm text-gray-500";
+      const trialPrice = document.createElement("td");
+      trialPrice.textContent = plan.trialPrice;
+      trialPrice.className = "whitespace-nowrap px-3 py-4 text-sm text-gray-500";
+      const interval = document.createElement("td");
+      interval.textContent = plan.interval;
+      interval.className = "whitespace-nowrap px-3 py-4 text-sm text-gray-500";
       const planId = document.createElement("td");
       planId.textContent = plan.planId;
       planId.className = "whitespace-nowrap px-3 py-4 text-sm text-gray-500";
@@ -40,6 +46,8 @@ window.addEventListener("load", () => {
       tr.appendChild(name);
       tr.appendChild(description);
       tr.appendChild(price);
+      tr.appendChild(trialPrice);
+      tr.appendChild(interval);
       tr.appendChild(planId);
       tr.appendChild(memberstackPlanId);
       table.appendChild(tr);
@@ -68,7 +76,8 @@ window.addEventListener("load", () => {
     description,
     price,
     interval,
-    memberstackPlanId
+    memberstackPlanId,
+    trialPrice
   ) => {
     startLoading();
     const response = await fetch("/add-plan", {
@@ -83,6 +92,7 @@ window.addEventListener("load", () => {
           description,
           price,
           interval,
+          trialPrice,
         },
         product: {
           name,
@@ -113,6 +123,7 @@ window.addEventListener("load", () => {
     const memberstackPlanId = document.querySelector(
       '[name="memberstackPlanId"]'
     ).value;
-    addPlan(name, description, price, interval, memberstackPlanId);
+    const trialPrice = document.querySelector('[name="trialPrice"]').value;
+    addPlan(name, description, price, interval, memberstackPlanId, trialPrice);
   });
 });

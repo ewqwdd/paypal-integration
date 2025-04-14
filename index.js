@@ -214,7 +214,15 @@ app.post("/add-plan", async (req, res) => {
     if (!product || !plan || !memberstackPlanId) {
       return res.status(400).json({ error: "Invalid request" });
     }
-    console.log(req.body);
+
+    const {
+      price,
+      name,
+      description,
+      interval = "MONTH", // "MONTH" или "YEAR"
+      trialPrice,
+      trialCycles = 1,
+    } = plan;
 
     const accessToken = await generateAccessToken();
 
@@ -223,35 +231,59 @@ app.post("/add-plan", async (req, res) => {
       {
         name: product.name,
         description: product.description,
-        type: "SERVICE", // "SERVICE" для цифровых товаров, "PHYSICAL" для физических товаров
-        category: "SOFTWARE", // Категория товара, можно выбрать из списка PayPal
+        type: "SERVICE",
+        category: "SOFTWARE",
       },
       {
         headers: { Authorization: `Bearer ${accessToken}` },
       }
     );
 
+    const billingCycles = [];
+
+    // Если указана скидка на первый период
+    if (trialPrice != null) {
+      billingCycles.push({
+        frequency: {
+          interval_unit: interval, // MONTH или YEAR
+          interval_count: 1,
+        },
+        tenure_type: "TRIAL",
+        sequence: 1,
+        total_cycles: trialCycles,
+        pricing_scheme: {
+          fixed_price: {
+            value: String(trialPrice),
+            currency_code: "USD",
+          },
+        },
+      });
+    }
+
+    billingCycles.push({
+      frequency: {
+        interval_unit: interval,
+        interval_count: 1,
+      },
+      tenure_type: "REGULAR",
+      sequence: 2,
+      total_cycles: 0, // бесконечно
+      pricing_scheme: {
+        fixed_price: {
+          value: String(price),
+          currency_code: "USD",
+        },
+      },
+    });
+
     const planResponse = await axios.post(
       `${PAYPAL_API}/v1/billing/plans`,
       {
-        product_id: productResponse.data.id, // Создай продукт заранее в PayPal
-        name: plan.name,
-        description: plan.description,
+        product_id: productResponse.data.id,
+        name,
+        description,
         status: "ACTIVE",
-        billing_cycles: [
-          {
-            frequency: {
-              interval_unit: plan.interval ?? "MONTH",
-              interval_count: 1,
-            },
-            tenure_type: "REGULAR",
-            sequence: 1,
-            total_cycles: 12,
-            pricing_scheme: {
-              fixed_price: { value: String(plan.price), currency_code: "USD" },
-            },
-          },
-        ],
+        billing_cycles: billingCycles,
         payment_preferences: {
           auto_bill_outstanding: true,
           setup_fee_failure_action: "CONTINUE",
@@ -266,9 +298,11 @@ app.post("/add-plan", async (req, res) => {
     const paypal = new Paypal({
       planId: planResponse.data.id,
       productId: productResponse.data.id,
-      name: plan.name,
-      price: plan.price,
+      name,
+      price,
       memberstackPlanId,
+      salePrice: trialPrice,
+      interval,
     });
     await paypal.save();
 
@@ -278,10 +312,11 @@ app.post("/add-plan", async (req, res) => {
       "Ошибка при добавлении плана:",
       error.response?.data || error.message
     );
-    console.error(error);
     res.status(500).json({ error: "Ошибка при добавлении плана" });
   }
 });
+
+
 
 app.post("/create-subscription", async (req, res) => {
   try {
@@ -482,6 +517,56 @@ app.get("/plans", async (req, res) => {
   const plans = await Paypal.find();
   res.json({ plans });
 });
+
+app.delete("/plan/:id", async (req, res) => {
+  try {
+    const password = req.headers.authorization;
+    if (password !== process.env.PASSWORD) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const { id } = req.params;
+
+    const plan = await Paypal.findOne({ planId: id });
+
+    if (!plan) {
+      return res.status(404).json({ error: "Plan not found" });
+    }
+
+    const accessToken = await generateAccessToken();
+
+    // Деактивируем план в PayPal
+    await axios.post(
+      `${PAYPAL_API}/v1/billing/plans/${id}/deactivate`,
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+
+    // Удаляем продукт (не обязательно, но можно)
+    await axios.delete(`${PAYPAL_API}/v1/catalogs/products/${plan.productId}`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+
+    // Удаляем локально из Mongo
+    await Paypal.deleteOne({ planId: id });
+
+    res.json({ success: true, message: "Plan deleted" });
+  } catch (error) {
+    console.error(
+      "Ошибка при удалении плана:",
+      error.response?.data || error.message
+    );
+    res.status(500).json({ error: "Ошибка при удалении плана" });
+  }
+});
+
+
 
 app.post("/webhook", async (req, res) => {
   const event = req.body;

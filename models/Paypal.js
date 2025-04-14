@@ -21,6 +21,14 @@ const paypalSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  salePrice: {
+    type: Number,
+    required: true,
+  },
+  interval: {
+    type: String,
+    required: true,
+  },
 });
 
 module.exports = mongoose.model("Paypal", paypalSchema);
