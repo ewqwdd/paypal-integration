@@ -430,7 +430,7 @@ app.get("/subscription-success/:id", async (req, res) => {
     await subscription.save();
 
     console.log("Подписка активирована:", member);
-    res.status(200).redirect("https://rfu-news.webflow.io/paypal-test");
+    res.status(200).redirect("https://www.rfunews.com/");
   } catch (error) {
     console.error(
       "Ошибка подтверждения подписки:",
