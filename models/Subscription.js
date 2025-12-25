@@ -25,6 +25,17 @@ const subscriptionSchema = new Schema({
     type: String,
     required: true,
   },
+  finished: {
+    type: Boolean,
+    default: false,
+  },
+  finishDate: {
+    type: Date,
+  },
+  deleted: {
+    type: Boolean,
+    default: false,
+  }
 });
 
 module.exports = mongoose.model("Subscription", subscriptionSchema);

@@ -7,6 +7,9 @@ const memberstackAdmin = require("@memberstack/admin");
 const Paypal = require("./models/Paypal");
 const mongoose = require("mongoose");
 const Subscription = require("./models/Subscription");
+const logger = require("./config/logger");
+
+require("./cronJobs/removeExpiredSubscriptions");
 
 const app = express();
 app.use(express.json());
@@ -78,17 +81,16 @@ app.get("/create-order", async (req, res) => {
         headers: { Authorization: `Bearer ${accessToken}` },
       }
     );
-    console.log(response.data);
 
     res.json({
       approvalUrl: response.data.links.find((link) => link.rel === "approve")
         .href,
     });
   } catch (error) {
-    console.error(
-      "Ошибка при создании заказа:",
-      error.response?.data || error.message
-    );
+    logger.error('Error creating order', {
+      error: error.response?.data || error.message,
+      stack: error.stack
+    });
     res.status(500).json({ error: "Ошибка при создании платежа" });
   }
 });
@@ -98,7 +100,7 @@ app.get("/capture-order", async (req, res) => {
   try {
     const orderID = req.query.token;
     const accessToken = await generateAccessToken();
-    console.log(accessToken);
+    logger.info('Capturing order', { orderId: orderID });
     const response = await axios.post(
       `${PAYPAL_API}/v2/checkout/orders/${orderID}/capture`,
       {},
@@ -106,13 +108,13 @@ app.get("/capture-order", async (req, res) => {
         headers: { Authorization: `Bearer ${accessToken}` },
       }
     );
-    console.log(response.data);
+    logger.info('Order captured successfully', { orderId: orderID, captureData: response.data });
     res.status(200).send("OK");
   } catch (error) {
-    console.error(
-      "Ошибка при подтверждении платежа:",
-      error.response?.data || error.message
-    );
+    logger.error('Error capturing order', {
+      error: error.response?.data || error.message,
+      stack: error.stack
+    });
     res.status(500).json({ error: "Ошибка при подтверждении платежа" });
   }
 });
@@ -135,10 +137,10 @@ app.post("/create-product", async (req, res) => {
 
     res.json({ productId: response.data.id });
   } catch (error) {
-    console.error(
-      "Ошибка при создании продукта:",
-      error.response?.data || error.message
-    );
+    logger.error('Error creating product', {
+      error: error.response?.data || error.message,
+      stack: error.stack
+    });
     res.status(500).json({ error: "Ошибка при создании продукта" });
   }
 });
@@ -181,10 +183,10 @@ app.post("/create-plan", async (req, res) => {
 
     res.json({ planId: response.data.id });
   } catch (error) {
-    console.error(
-      "Ошибка при создании плана:",
-      error.response?.data || error.message
-    );
+    logger.error('Error creating plan', {
+      error: error.response?.data || error.message,
+      stack: error.stack
+    });
     res.status(500).json({ error: "Ошибка при создании плана" });
   }
 });
@@ -308,15 +310,13 @@ app.post("/add-plan", async (req, res) => {
 
     res.json({ plan: paypal });
   } catch (error) {
-    console.error(
-      "Ошибка при добавлении плана:",
-      error.response?.data || error.message
-    );
+    logger.error('Error adding plan', {
+      error: error.response?.data || error.message,
+      stack: error.stack
+    });
     res.status(500).json({ error: "Ошибка при добавлении плана" });
   }
 });
-
-
 
 app.post("/create-subscription", async (req, res) => {
   try {
@@ -331,6 +331,7 @@ app.post("/create-subscription", async (req, res) => {
     const foundSubscription = await Subscription.findOne({
       memberEmail: email,
       planId,
+      finished: false,
     });
 
     if (foundSubscription) {
@@ -375,10 +376,10 @@ app.post("/create-subscription", async (req, res) => {
       url: response.data.links.find((link) => link.rel === "approve").href,
     });
   } catch (error) {
-    console.error(
-      "Ошибка при создании подписки:",
-      error.response?.data || error.message
-    );
+    logger.error('Error creating subscription', {
+      error: error.response?.data || error.message,
+      stack: error.stack
+    });
     res.status(500).json({
       error:
         error.response?.data || error.message || "Ошибка при создании подписки",
@@ -400,7 +401,6 @@ app.get("/subscription-success/:id", async (req, res) => {
     );
 
     const subscriptionData = response.data;
-    console.log(subscriptionData);
     const email = subscriptionData.subscriber.email_address;
 
     const plan = await Paypal.findOne({
@@ -429,13 +429,12 @@ app.get("/subscription-success/:id", async (req, res) => {
     });
     await subscription.save();
 
-    console.log("Подписка активирована:", member);
     res.status(200).redirect("https://www.rfunews.com/");
   } catch (error) {
-    console.error(
-      "Ошибка подтверждения подписки:",
-      error.response?.data || error.message
-    );
+    logger.error('Error confirming subscription', {
+      error: error.response?.data || error.message,
+      stack: error.stack
+    });
     res.status(500).json({
       error:
         error.response?.data ||
@@ -452,47 +451,23 @@ app.post("/unsubscribe", async (req, res) => {
     let subscription;
 
     if (subscriptionId) {
-      subscription = await Subscription.findOne({ subscriptionId });
+      subscription = await Subscription.findOne({ subscriptionId, finished: false });
     } else if (memberId) {
-      subscription = await Subscription.findOne({ memberId });
+      subscription = await Subscription.findOne({ memberId, finished: false });
     }
 
     if (!subscription) {
       return res.status(404).json({ error: "Subscrription not found" });
     }
 
-    try {
-      await memberstack.members.removeFreePlan({
-        id: subscription.memberId,
-        data: {
-          planId: subscription.memberstackPlanId,
-        },
-      });
-    } catch (error) {
-      console.error("Ошибка при отмене через memberId:", error);
-
-      try {
-        const member = await memberstack.members.retrieve({
-          email: subscription.memberEmail,
-        });
-
-        if (member?.data?.id) {
-          await memberstack.members.removeFreePlan({
-            id: member.data.id,
-            data: { planId: subscription.memberstackPlanId },
-          });
-        } else {
-          return res
-            .status(404)
-            .json({ error: "Пользователь не найден по email" });
-        }
-      } catch (emailError) {
-        console.error("Ошибка при поиске по email:", emailError);
-        return res.status(500).json({ error: "Ошибка при отмене подписки" });
-      }
-    }
-
     const accessToken = await generateAccessToken();
+
+    const response = await axios.get(
+      `${PAYPAL_API}/v1/billing/subscriptions/${subscription.subscriptionId}`,
+      {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      }
+    );
 
     await axios.post(
       `${PAYPAL_API}/v1/billing/subscriptions/${subscription.subscriptionId}/cancel`,
@@ -504,11 +479,22 @@ app.post("/unsubscribe", async (req, res) => {
       }
     );
 
-    await Subscription.deleteOne({ _id: subscription._id });
+    subscription.finished = true;
+
+    if (response.data.billing_info?.next_billing_time) {
+      subscription.finishDate = new Date(
+        response.data.billing_info.next_billing_time
+      );
+    }
+
+    await subscription.save();
 
     res.json({ success: true, message: "Subscription is cancelled" });
   } catch (err) {
-    console.error("Ошибка при отмене подписки:", err);
+    logger.error('Error unsubscribing', {
+      error: err.message,
+      stack: err.stack
+    });
     res.status(500).json({ error: "Внутренняя ошибка сервера" });
   }
 });
@@ -558,49 +544,43 @@ app.delete("/plan/:id", async (req, res) => {
 
     res.json({ success: true, message: "Plan deleted" });
   } catch (error) {
-    console.error(
-      "Ошибка при удалении плана:",
-      error.response?.data || error.message
-    );
+    logger.error('Error deleting plan', {
+      error: error.response?.data || error.message,
+      stack: error.stack
+    });
     res.status(500).json({ error: "Ошибка при удалении плана" });
   }
 });
 
-
-
 app.post("/webhook", async (req, res) => {
   const event = req.body;
 
-  console.log("Webhook event:", event);
+  logger.info('Webhook received', { eventType: event.event_type, resourceId: event.resource?.id });
 
   if (event.event_type === "BILLING.SUBSCRIPTION.CANCELLED") {
-    console.log("Подписка отменена:", event.resource.id);
+    logger.info('Subscription cancelled via webhook', { subscriptionId: event.resource.id });
     const subscription = await Subscription.findOne({
       subscriptionId: event.resource.id,
     });
 
-    try {
-      await memberstack.members.removeFreePlan({
-        id: subscription.memberId,
-        data: {
-          planId: subscription.memberstackPlanId,
-        },
-      });
-    } catch (error) {
-      const member = await memberstack.members.retrieve({
-        email: subscription.memberEmail,
-      });
-      memberEmail.members.removeFreePlan({
-        id: member.data.id,
-        data: {
-          planId: subscription.memberstackPlanId,
-        },
-      });
+    if (!subscription.finished) {
+      subscription.finished = true;
+      const accessToken = await generateAccessToken();
+
+      const response = await axios.get(
+        `${PAYPAL_API}/v1/billing/subscriptions/${event.resource.id}`,
+        {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        }
+      );
+      if (response.data.billing_info.next_billing_time) {
+        subscription.finishDate = new Date(
+          response.data.billing_info.next_billing_time
+        );
+      }
+      await subscription.save();
     }
 
-    await subscription.deleteOne({ _id: subscription._id });
-  } else if (event.event_type === "PAYMENT.SALE.COMPLETED") {
-    console.log("Оплата подписки прошла успешно:", event.resource.id);
   }
 
   res.sendStatus(200);
@@ -610,8 +590,8 @@ app.get("/", (req, res) => {
   res.sendFile(__dirname + "/static/index.html");
 });
 
-mongoose.connect(process.env.MONGO_URL).then(() => console.log("Connected!"));
+mongoose.connect(process.env.MONGO_URL).then(() => console.log('MongoDB connected successfully'));
 
 app.listen(process.env.PORT || 4000, () =>
-  console.log("Сервер запущен на порту 4000")
+  console.log(`Server started on port ${process.env.PORT || 4000}`)
 );
