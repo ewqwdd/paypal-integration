@@ -500,8 +500,21 @@ app.post("/unsubscribe", async (req, res) => {
 });
 
 app.get("/plans", async (req, res) => {
-  const plans = await Paypal.find();
-  res.json({ plans });
+  try {
+    const password = req.headers.authorization;
+    if (password !== process.env.PASSWORD) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const plans = await Paypal.find();
+    res.json({ plans });
+  } catch (error) {
+    logger.error("Error fetching plans", {
+      error: error.message,
+      stack: error.stack,
+    });
+    res.status(500).json({ error: "Ошибка при получении планов" });
+  }
 });
 
 app.delete("/plan/:id", async (req, res) => {
